@@ -50,6 +50,107 @@
   backdrop.addEventListener("click", closeNav);
   $$(".nav__link, .nav__cta", nav).forEach((a) => a.addEventListener("click", closeNav));
 
+  /* ---------- Hero carousel ---------- */
+  const heroCarousel = $("[data-hero-carousel]");
+  if (heroCarousel) {
+    const slides = $$("[data-hero-slide]", heroCarousel);
+    const dots = $$("[data-hero-dot]", heroCarousel);
+    const prevBtn = $("[data-hero-prev]", heroCarousel);
+    const nextBtn = $("[data-hero-next]", heroCarousel);
+    const previewImage = $("[data-hero-preview]", heroCarousel);
+    let currentSlide = 0;
+    let carouselTimer = null;
+
+    $$(".hero__slide-image", heroCarousel).forEach((image) => {
+      image.addEventListener("error", () => {
+        image.hidden = true;
+      });
+    });
+
+    if (previewImage) {
+      previewImage.addEventListener("error", () => {
+        const fallback = previewImage.dataset.fallbackSrc;
+        if (fallback && previewImage.getAttribute("src") !== fallback) {
+          previewImage.src = fallback;
+        } else {
+          previewImage.hidden = true;
+        }
+      });
+    }
+
+    const getSlideImageSrc = (index) => {
+      const slide = slides[(index + slides.length) % slides.length];
+      const image = slide ? $(".hero__slide-image", slide) : null;
+      return image ? image.getAttribute("src") : "";
+    };
+
+    const updatePreviewImage = () => {
+      if (!previewImage || !slides.length) return;
+      const activeSrc = getSlideImageSrc(currentSlide);
+      const nextSrc = getSlideImageSrc(currentSlide + 1) || activeSrc;
+
+      previewImage.hidden = false;
+      previewImage.dataset.fallbackSrc = activeSrc;
+      if (nextSrc && previewImage.getAttribute("src") !== nextSrc) {
+        previewImage.src = nextSrc;
+      }
+    };
+
+    const showSlide = (index) => {
+      if (!slides.length) return;
+      currentSlide = (index + slides.length) % slides.length;
+
+      slides.forEach((slide, slideIndex) => {
+        const isActive = slideIndex === currentSlide;
+        slide.classList.toggle("active", isActive);
+        slide.setAttribute("aria-hidden", isActive ? "false" : "true");
+      });
+
+      dots.forEach((dot, dotIndex) => {
+        const isActive = dotIndex === currentSlide;
+        dot.classList.toggle("active", isActive);
+        dot.setAttribute("aria-pressed", isActive ? "true" : "false");
+      });
+
+      updatePreviewImage();
+    };
+
+    const stopCarousel = () => {
+      if (carouselTimer) window.clearInterval(carouselTimer);
+      carouselTimer = null;
+    };
+
+    const startCarousel = () => {
+      stopCarousel();
+      carouselTimer = window.setInterval(() => showSlide(currentSlide + 1), 5600);
+    };
+
+    if (prevBtn) prevBtn.addEventListener("click", () => {
+      showSlide(currentSlide - 1);
+      startCarousel();
+    });
+
+    if (nextBtn) nextBtn.addEventListener("click", () => {
+      showSlide(currentSlide + 1);
+      startCarousel();
+    });
+
+    dots.forEach((dot, index) => {
+      dot.addEventListener("click", () => {
+        showSlide(index);
+        startCarousel();
+      });
+    });
+
+    heroCarousel.addEventListener("mouseenter", stopCarousel);
+    heroCarousel.addEventListener("mouseleave", startCarousel);
+    heroCarousel.addEventListener("focusin", stopCarousel);
+    heroCarousel.addEventListener("focusout", startCarousel);
+
+    showSlide(0);
+    startCarousel();
+  }
+
   /* ---------- Active link on scroll ---------- */
   const sections = $$("section[id]");
   const navLinks = $$(".nav__link");
